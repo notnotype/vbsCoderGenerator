@@ -2,17 +2,7 @@ import os
 import sys
 
 from pypinyin import lazy_pinyin
-
-keymap = {
-    "Shift": "+",
-    'Ctrl': "^",
-    "Alt": "%",
-    "BACKSPACE": "{BACKSPACE}",
-    "BREAK": "{BREAK}",
-    'CAPS LOCK': "{CAPSLOCK}",
-    'DEL': "{DELETE}",
-}
-
+import click
 
 # DOWN ARROW    {DOWN}
 # END  {END}
@@ -31,11 +21,18 @@ keymap = {
 # TAB     {TAB}
 # UP ARROW    {UP}
 # F1 {F1}
+sep_switch_typing = 100
+sep_close_typing = 150
+sep_time = 5
+zh_char_sep = 30
+wait_notepad_time = 700
+
+
 def switch_typing() -> list:
     snippet = [
         "' 打开输入法",
         f'WshShell.SendKeys "^+"',
-        f'WScript.Sleep 100'
+        f'WScript.Sleep {sep_switch_typing}'
     ]
     return snippet
 
@@ -43,7 +40,7 @@ def switch_typing() -> list:
 def my_close_typing() -> list:
     snippet = [
         f'WshShell.SendKeys "^+"',
-        f'WScript.Sleep 150'
+        f'WScript.Sleep {sep_close_typing}'
     ]
     return snippet
 
@@ -51,7 +48,7 @@ def my_close_typing() -> list:
 def general_close_type() -> list:
     snippet = [
         f'WshShell.SendKeys "^ "',
-        f'WScript.Sleep 150'
+        f'WScript.Sleep {sep_close_typing}'
     ]
     return snippet
 
@@ -92,17 +89,17 @@ def mapping(char: str) -> tuple:
         return 'str', f"\"{char}\""
 
 
-sep_time = 5
-zh_char_sep = 30
-wait_notepad_time = 700
-
-
 def translate(code: str) -> str:
     vbs_header = [
         "''''''''''''''''''''''''''",
         "' author: Notype",
         "' github: http://www.github.com/notnotype",
         "' date: 2020/11/21 0:31",
+        '\'whouse:            {}'.format('me' if close_typing == my_close_typing else 'you'),
+        '\'sep_time:          {}'.format(str(sep_time)),
+        '\'sep_switch_typing: {}'.format(str(sep_switch_typing)),
+        '\'zh_char_sep:       {}'.format(str(zh_char_sep)),
+        '\'wait_notepad_time: {}'.format(str(wait_notepad_time)),
         "''''''''''''''''''''''''''",
         "''''''''''头文件''''''''''''''''",
         'Set WshShell=WScript.CreateObject("WScript.Shell")',
@@ -145,22 +142,65 @@ def translate(code: str) -> str:
     return translate_result
 
 
-if __name__ == '__main__':
-    os.environ.setdefault('whouse', 'me')
+@click.command()
+@click.option('--whouse', '-w', default='you', help='谁用?')
+@click.option('--fromfile', '-f', type=click.File(encoding='utf-8'), help='从文件加载输入')
+@click.option('--text', '-t', required=True, help='要转换成vbs的文本')
+@click.option('--outfile', '-o', type=click.File(encoding='utf8'), help='输入文件')
+@click.option('--sep-time', '-s', help='每一个字母的间隔速度')
+@click.option('--zh-char-sep', '-zcs', '-z', help='中文打字间隔速度')
+@click.option('--sep-switch-typing', '-sst', '-s', help='打开输入法速度')
+@click.option('--wait-notepad-time', '-wnt', help='等待记事本打开时间')
+@click.option('--sep-close-typing', '-sct', help='关闭输入法时间')
+@click.option('--alert', '-a', help='提示警告')
+def main(whouse, fromfile, text, outfile, **kwargs):
+    """
+    功能: 把一串文本转换为vbs自动编写这段代码的vbs脚本\n
+    示例: `python main.py --text 我是傻逼`
+    """
+    global close_typing
+    global sep_time
+    global sep_switch_typing
+    global zh_char_sep
+    global wait_notepad_time
 
-    if os.environ.get('whouse', default='you') == 'me':
+    if kwargs['sep_time']:
+        sep_time = kwargs['sep_time']
+    if kwargs['sep_switch_typing']:
+        sep_switch_typing = kwargs['sep_switch_typing']
+    if kwargs['zh_char_sep']:
+        zh_char_sep = kwargs['zh_char_sep']
+    if kwargs['wait_notepad_time']:
+        wait_notepad_time = kwargs['wait_notepad_time']
+
+    print('======参数列表======')
+    print('whouse:            {}' .format(str(whouse)))
+    print('sep_time:          {}' .format(str(sep_time)))
+    print('sep_switch_typing: {}' .format(str(sep_switch_typing)))
+    print('zh_char_sep:       {}' .format(str(zh_char_sep)))
+    print('wait_notepad_time: {}' .format(str(wait_notepad_time)))
+    print('====================')
+
+    my_code = text
+
+    if whouse == 'me':
         close_typing = my_close_typing
     else:
         close_typing = general_close_type
-    # student.h
-    old_my_code = \
-        '''adsfdsaf'''
-    old_my_code2 = '你好世界,我是傻逼,啦哈剌是我儿子哈哈哈哈哈哈哈'
 
-    my_code = ''
-    with open(sys.argv[0], 'r', encoding='utf8') as f:
-        my_code = f.read()
+    if fromfile:
+        my_code = fromfile.read()
+        print('转换前字数: {}'.format(len(my_code)))
 
     r = translate(my_code)
-    with open('textcode.vbs', 'w', encoding='utf8') as f:
-        f.write(r)
+    print('转换后字数: {}'.format(len(r)))
+    if not outfile:
+        with open('textcode.vbs', 'w', encoding='utf8') as f:
+            f.write(r)
+    else:
+        outfile.write(r)
+    print('输出完成')
+
+
+if __name__ == '__main__':
+    main()
