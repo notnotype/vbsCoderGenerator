@@ -146,7 +146,7 @@ def translate(code: str) -> str:
 @click.option('--whouse', '-w', default='you', help='谁用?')
 @click.option('--fromfile', '-f', type=click.File(encoding='utf-8'), help='从文件加载输入')
 @click.option('--text', '-t', required=True, help='要转换成vbs的文本')
-@click.option('--outfile', '-o', type=click.File(encoding='utf8'), help='输入文件')
+@click.option('--outfile', '-o', help='输出文件')
 @click.option('--sep-time', '-s', help='每一个字母的间隔速度')
 @click.option('--zh-char-sep', '-zcs', '-z', help='中文打字间隔速度')
 @click.option('--sep-switch-typing', '-sst', '-s', help='打开输入法速度')
@@ -198,7 +198,8 @@ def main(whouse, fromfile, text, outfile, **kwargs):
         with open('textcode.vbs', 'w', encoding='utf8') as f:
             f.write(r)
     else:
-        outfile.write(r)
+        with open(outfile, 'w', encoding='utf8') as f:
+            f.write(r)
     print('输出完成')
 
 
