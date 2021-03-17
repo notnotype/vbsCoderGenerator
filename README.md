@@ -6,7 +6,7 @@
 git https://github.com/notnotype/vbsCoderGenerator
 cd vbsCoderGenerator
 pip install -r requirements.txt
-./reade.vbs
+./readme.vbs
 ```
  
 
